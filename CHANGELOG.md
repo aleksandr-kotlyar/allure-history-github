@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Docker action backed by a tested, immutable Core image from public GHCR.
+- Action outputs for the immutable report URL and generated Pages directory.
+- An isolated CI integration check that generates a real report and persists
+  history through the same action used by consumers and forks.
+
+### Changed
+
+- The reusable workflow delegates report publishing to this repository's action
+  and keeps artifact downloads and GitHub Pages deployment as workflow steps.
+- Core is pinned by image digest in `action.yml`; callers no longer select a
+  source checkout with `core-ref`.
+
 ## 2026.4.1 (2026-10-26)
 
 ### Changed

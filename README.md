@@ -1,16 +1,40 @@
 # Allure History GitHub
 
-Publish Allure reports with preserved history to GitHub Pages using GitHub Actions and static files. No report server, database, web framework, or external storage service is required.
+Publish static Allure reports with persistent branch history to GitHub Pages.
+Use this repository as a working example to fork, as a GitHub Action inside your
+own job, or as a reusable workflow that handles the complete Pages deployment.
 
-## Scope
+Report generation, history, retention, and indexes come from
+[Allure History Core](https://github.com/aleksandr-kotlyar/allure-history-core).
+The action runs a tested public GHCR image pinned by digest in `action.yml`.
+Consumers do not need registry credentials or a container build.
 
-This project publishes Allure report history to GitHub Pages using static files only. It is designed for GitHub Actions projects, immutable per-run report snapshots, stable branch-level `latest/` aliases, and lightweight pull request report links.
+## Fork the example
 
-It is not a test management system, ReportPortal replacement, backend service, database-backed analytics platform, or generic multi-CI report publisher.
+1. Fork this public repository and enable GitHub Actions in your fork.
+2. In **Settings → Pages**, choose **GitHub Actions** as the source.
+3. Run **CI** from the Actions tab, or push to `master`/`main`.
 
-## Quick Start
+The CI tests this checkout's action, then calls the local reusable workflow.
+That workflow references its own action using `$/`, so edits in your fork are
+used at the same commit. The Core image remains the tested upstream image.
+The workflow creates `gh-pages` in your repository and deploys your report:
 
-Enable GitHub Pages for the repository with the source set to `GitHub Actions`, then call the reusable workflow after a test job uploads `allure-results`:
+```text
+https://<owner>.github.io/<repository>/dev/<branch-slug>/latest/
+```
+
+Repository names and report URLs are derived from the caller's GitHub context.
+Pull requests run tests and isolated action checks; the example deploys Pages
+only on pushes to `master`/`main` and manual runs permitted by the environment.
+
+This publisher owns the repository's entire Pages site. Use a dedicated report
+repository if an existing Pages site must be preserved.
+
+## Add the action to an existing job
+
+Replace `RELEASE_TAG` with a release containing `action.yml`. Your test
+requirements must include `allure-pytest` to produce `allure-results`.
 
 ```yaml
 name: Test And Publish
@@ -18,117 +42,130 @@ name: Test And Publish
 on:
   push:
     branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: write
   pages: write
   id-token: write
-  pull-requests: write
 
 jobs:
-  test:
+  test-and-publish:
     runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: |
-          pytest --alluredir=allure-results
-          echo "${GITHUB_RUN_ID}" > jobid
-      - uses: actions/upload-artifact@v7
-        with:
-          name: allure-results
-          path: allure-results
-      - uses: actions/upload-artifact@v7
-        with:
-          name: jobid
-          path: jobid
+      - run: pytest --alluredir=allure-results
 
-  publish-allure-history:
-    needs: test
-    uses: aleksandr-kotlyar/allure-history-github/.github/workflows/allure-history.yml@2026.4.1
-    with:
-      environment: dev
-      pages-branch: gh-pages
-      reports-to-keep: 30
-      allure-results-artifact: allure-results
-      job-id-artifact: jobid
-      comment-pr: ${{ github.event_name == 'pull_request' }}
-      pull-request-number: ${{ github.event.pull_request.number || '' }}
+      - uses: aleksandr-kotlyar/allure-history-github@RELEASE_TAG
+        id: report
+        with:
+          results-dir: allure-results
+          environment: dev
+          reports-to-keep: 30
+
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: ${{ steps.report.outputs.public-dir }}
+      - uses: actions/deploy-pages@v5
+        id: deploy
 ```
 
-The reusable workflow downloads the uploaded artifacts, restores the previous branch history from `gh-pages`, generates a new immutable report snapshot, updates `latest/`, commits the refreshed `public/` tree back to the storage branch, and deploys the same content to GitHub Pages.
+The action restores history, creates an immutable report, updates `latest/`,
+commits the retained `public/` tree to `gh-pages`, and returns its paths. The
+following Pages steps upload and deploy that same tree.
 
-Report generation is delegated to
-[`allure-history-core`](https://gitlab.com/aleksandr-kotlyar/allure-history-core).
-The workflow checks out the public GitLab core release selected by `core-ref`
-(default `2026.4.1`). It does not require access to the GitHub core mirror.
-Pin a release tag or commit in production workflows.
+The Docker action targets Linux AMD64 runners, including `ubuntu-24.04`.
 
-## Inputs
+## Use the complete reusable workflow
 
-| Input | Default | Description |
+If tests run in a separate job, upload an artifact named `allure-results` with
+`actions/upload-artifact@v7`, then call the reusable workflow:
+
+```yaml
+jobs:
+  publish-allure-history:
+    needs: tests
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    uses: aleksandr-kotlyar/allure-history-github/.github/workflows/allure-history.yml@RELEASE_TAG
+    with:
+      environment: dev
+      reports-to-keep: 30
+```
+
+Enable Pages with the `GitHub Actions` source and allow the publishing branch in
+the `github-pages` environment. GitHub.com self repository references (`$/`)
+ensure that the workflow uses the action from the selected workflow version.
+
+## Inputs and outputs
+
+| Action input | Default | Purpose |
 | --- | --- | --- |
-| `environment` | `dev` | Report environment folder under `public/`. |
-| `pages-branch` | `gh-pages` | Persistent storage branch for generated Pages content and Allure history. |
-| `reports-to-keep` | `30` | Report snapshots retained per environment and branch. |
-| `allure-results-artifact` | `allure-results` | Artifact name containing `allure-results/`. |
-| `job-id-artifact` | `jobid` | Optional artifact name containing a `jobid` file. |
-| `pages-base-url` | inferred | Optional explicit Pages base URL. |
-| `comment-pr` | `false` | Post or update a pull request comment with the immutable report URL. |
-| `pull-request-number` | empty | Pull request number used for comments. |
-| `core-ref` | `2026.4.1` | Allure History Core release tag or commit from GitLab. |
+| `results-dir` | `allure-results` | Results directory in the caller workspace. |
+| `environment` | `dev` | Report environment folder. |
+| `pages-branch` | `gh-pages` | Persistent report/history storage branch. |
+| `reports-to-keep` | `30` | Snapshots retained per environment and branch. |
+| `job-id` | artifact or run ID | Optional snapshot ID; otherwise uses `.artifacts/jobid/jobid` or `GITHUB_RUN_ID`. |
+| `pages-base-url` | inferred | Explicit base URL for a custom Pages domain. |
+| `github-token` | `github.token` | Token with `contents: write` for storage pushes. |
+| `comment-pr` | `false` | Enable a PR report comment; also requires `pull-requests: write`. |
+| `pull-request-number` | empty | PR number to comment on. |
 
-## Report Storage Layout
+The reusable workflow accepts the shared publishing inputs above, except
+`results-dir`, `job-id`, and `github-token`. Instead, it downloads
+`allure-results-artifact` (default `allure-results`) and optional
+`job-id-artifact` (default `jobid`), and uses the caller's `GITHUB_TOKEN`.
 
-Reports are persisted in the `gh-pages` storage branch:
+| Action output | Purpose |
+| --- | --- |
+| `report-url` | Immutable URL of this run's report. |
+| `public-dir` | Generated directory passed to `actions/upload-pages-artifact`. |
+
+## Storage
 
 ```text
 public/
   index.html
-  {environment}/
-    index.html
-    {branch-slug}/
+  <environment>/
+    <branch-slug>/
       index.html
       latest/
-        index.html
       history/
-      job_NNN/
+      job_<id>/
 ```
 
-- `latest/` redirects to the newest immutable `job_NNN/` snapshot.
-- `history/` is reused by the next run to preserve Allure trends.
-- Branch folders are slugged from `github.head_ref` or `github.ref_name` to keep URLs stable and safe.
-
-## Compatibility
-
-| Area | Status | Notes |
-| --- | ---: | --- |
-| GitHub Actions | Supported | Primary target. |
-| GitHub Pages | Supported | Reports are published as static Pages content. |
-| Allure Report 2 | Supported | Current target format. |
-| GitLab CI/CD | Out of scope | This variant is GitHub-native. |
+Each run restores the branch's history, creates a new snapshot, refreshes the
+`latest/` redirect, and applies retention. The persistent `gh-pages` branch is
+created on the first run. Push access to that branch is required.
 
 ## Development
 
-Local tests:
-
 ```bash
-git clone git@github.com:aleksandr-kotlyar/allure-history-github.git
-cd allure-history-github
 python3 -m pip install -r requirements.txt
-pytest
+pytest -m "not demo"
 ```
 
-GitHub Actions runs contract tests for pull requests. Pushes to `master` or
-`main`, and manual workflow runs, also publish the demo through the reusable
-workflow. Configure GitHub Pages with the `GitHub Actions` source before
-running the demo publication.
+CI runs the local Docker action against an isolated bare Git repository, then
+runs the workflow's `$/` reference to verify a second report restores history.
+It checks both immutable snapshots, Allure trends, persistent storage, and
+returned outputs. These checks do not deploy Pages or push report storage to
+GitHub. Successful runs on the allowed publishing branch also deploy the demo.
+
+Core owns the runtime image and its registry publication. Releases of this
+repository pin a tested Core digest; forks can use that image unchanged.
 
 ## Migration
 
-Update caller `uses:` paths to `aleksandr-kotlyar/allure-history-github` when
-adopting the rename. Repository redirects do not preserve Actions references.
+New action-based releases pin Core in `action.yml`. The reusable workflow's
+previous `core-ref` input is removed; callers select the publisher release tag.
+Older tags keep their original workflow and inputs.

@@ -47,9 +47,69 @@ jobs:
           path: jobid
           if-no-files-found: error
 
+  action_smoke:
+    needs: test_gate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      GIT_CONFIG_COUNT: '2'
+      GIT_CONFIG_KEY_0: url.file:///github/workspace/.action-smoke.git.insteadOf
+      GIT_CONFIG_VALUE_0: https://x-access-token:fixture-token@github.com/${{ github.repository }}.git
+      GIT_CONFIG_KEY_1: safe.directory
+      GIT_CONFIG_VALUE_1: /github/workspace/.action-smoke.git
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: allure-results
+          path: allure-results
+
+      - name: Prepare isolated report storage
+        run: git init --bare .action-smoke.git
+
+      - name: Run this checkout's action
+        id: report
+        uses: ./
+        with:
+          github-token: fixture-token
+          pages-branch: action-smoke
+          job-id: '1001'
+
+      - name: Reset generated workspace for the next report
+        run: rm -rf pages-worktree public
+
+      - name: Restore history through the workflow's action reference
+        id: next_report
+        uses: $/
+        with:
+          github-token: fixture-token
+          pages-branch: action-smoke
+          job-id: '1002'
+
+      - name: Verify persistent report and action outputs
+        env:
+          REPORT_URL: ${{ steps.next_report.outputs.report-url }}
+          PUBLIC_DIR: ${{ steps.next_report.outputs.public-dir }}
+        run: |
+          git --git-dir=.action-smoke.git cat-file -e action-smoke:public/index.html
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          public = Path(os.environ['PUBLIC_DIR'])
+          assert next(public.glob('**/job_1001/index.html')).is_file()
+          summary = next(public.glob('**/job_1002/widgets/summary.json'))
+          assert json.loads(summary.read_text())['statistic']['total'] > 0
+          history = summary.parent.parent / 'history/history-trend.json'
+          assert len(json.loads(history.read_text())) >= 2
+          assert os.environ['REPORT_URL'].endswith('/job_1002/')
+          PY
+
   publish_allure_history:
     if: github.event_name != 'pull_request'
-    needs: test_gate
+    needs: [test_gate, action_smoke]
     uses: ./.github/workflows/allure-history.yml
     with:
       allure-results-artifact: allure-results
