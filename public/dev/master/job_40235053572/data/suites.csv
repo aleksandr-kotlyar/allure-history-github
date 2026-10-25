@@ -1,0 +1,5 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"","0","test_project_ci_dogfoods_reusable_workflow","tests","Sun Oct 25 21:20:55 UTC 2026","passed","Sun Oct 25 21:20:55 UTC 2026","","test_github_workflow","",""
+"","0","test_reusable_workflow_contains_github_pages_deploy_steps","tests","Sun Oct 25 21:20:55 UTC 2026","passed","Sun Oct 25 21:20:55 UTC 2026","","test_github_workflow","",""
+"","1","test_reusable_workflow_delegates_report_generation_to_core","tests","Sun Oct 25 21:20:55 UTC 2026","passed","Sun Oct 25 21:20:55 UTC 2026","","test_github_workflow","",""
+"","2","test_default_pages_url_uses_standard_github_environment","tests","Sun Oct 25 21:20:55 UTC 2026","passed","Sun Oct 25 21:20:55 UTC 2026","","test_github_workflow","",""
