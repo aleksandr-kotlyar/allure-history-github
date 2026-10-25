@@ -23,10 +23,10 @@ def test_reusable_workflow_contains_github_pages_deploy_steps():
         encoding="utf-8"
     )
 
-    assert "uses: actions/download-artifact@v4" in workflow
-    assert "uses: actions/configure-pages@v5" in workflow
-    assert "uses: actions/upload-pages-artifact@v3" in workflow
-    assert "uses: actions/deploy-pages@v4" in workflow
+    assert "uses: actions/download-artifact@v8" in workflow
+    assert "uses: actions/configure-pages@v6" in workflow
+    assert "uses: actions/upload-pages-artifact@v5" in workflow
+    assert "uses: actions/deploy-pages@v5" in workflow
     assert 'default: gh-pages' in workflow
     assert 'default: allure-results' in workflow
     assert 'default: jobid' in workflow
