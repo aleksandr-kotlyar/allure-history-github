@@ -1,4 +1,4 @@
-# GitHub Allure History Publisher
+# Allure History GitHub
 
 Publish Allure reports with preserved history to GitHub Pages using GitHub Actions and static files. No report server, database, web framework, or external storage service is required.
 
@@ -49,7 +49,7 @@ jobs:
 
   publish-allure-history:
     needs: test
-    uses: aleksandr-kotlyar/github-allure-history/.github/workflows/allure-history.yml@main
+    uses: aleksandr-kotlyar/allure-history-github/.github/workflows/allure-history.yml@master
     with:
       environment: dev
       pages-branch: gh-pages
@@ -63,9 +63,12 @@ jobs:
 The reusable workflow downloads the uploaded artifacts, restores the previous branch history from `gh-pages`, generates a new immutable report snapshot, updates `latest/`, commits the refreshed `public/` tree back to the storage branch, and deploys the same content to GitHub Pages.
 
 Report generation is delegated to
-[`core-allure-history`](https://github.com/aleksandr-kotlyar/core-allure-history).
-The workflow checks out the core release selected by `core-ref`; pin a release tag
-or commit in production workflows.
+[`allure-history-core`](https://gitlab.com/aleksandr-kotlyar/allure-history-core).
+The workflow checks out the public GitLab core release selected by `core-ref`
+(default `2026.2.11`). It does not require access to the GitHub core mirror.
+Pin a release tag or commit in production workflows. The workflow example uses
+`master` until an adapter release is published; use a validated commit SHA for
+an immutable pin.
 
 ## Inputs
 
@@ -79,7 +82,7 @@ or commit in production workflows.
 | `pages-base-url` | inferred | Optional explicit Pages base URL. |
 | `comment-pr` | `false` | Post or update a pull request comment with the immutable report URL. |
 | `pull-request-number` | empty | Pull request number used for comments. |
-| `core-ref` | `main` | Core Allure History release tag or commit. |
+| `core-ref` | `2026.2.11` | Allure History Core release tag or commit from GitLab. |
 
 ## Report Storage Layout
 
@@ -116,7 +119,18 @@ public/
 Local tests:
 
 ```bash
-cd github-allure-history
+git clone git@github.com:aleksandr-kotlyar/allure-history-github.git
+cd allure-history-github
 python3 -m pip install -r requirements.txt
 pytest
 ```
+
+GitHub Actions runs contract tests for pull requests. Pushes to `master` or
+`main`, and manual workflow runs, also publish the demo through the reusable
+workflow. Configure GitHub Pages with the `GitHub Actions` source before
+running the demo publication.
+
+## Migration
+
+Update caller `uses:` paths to `aleksandr-kotlyar/allure-history-github` when
+adopting the rename. Repository redirects do not preserve Actions references.

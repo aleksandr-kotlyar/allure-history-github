@@ -48,6 +48,7 @@ jobs:
           if-no-files-found: error
 
   publish_allure_history:
+    if: github.event_name != 'pull_request'
     needs: test_gate
     uses: ./.github/workflows/allure-history.yml
     with:
