@@ -53,11 +53,9 @@ jobs:
     permissions:
       contents: read
     env:
-      GIT_CONFIG_COUNT: '2'
+      GIT_CONFIG_COUNT: '1'
       GIT_CONFIG_KEY_0: url.file:///github/workspace/.action-smoke.git.insteadOf
       GIT_CONFIG_VALUE_0: https://x-access-token:fixture-token@github.com/${{ github.repository }}.git
-      GIT_CONFIG_KEY_1: safe.directory
-      GIT_CONFIG_VALUE_1: /github/workspace/.action-smoke.git
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
@@ -66,7 +64,7 @@ jobs:
           path: allure-results
 
       - name: Prepare isolated report storage
-        run: git init --bare .action-smoke.git
+        run: sudo git init --bare .action-smoke.git
 
       - name: Run this checkout's action
         id: report
@@ -77,7 +75,7 @@ jobs:
           job-id: '1001'
 
       - name: Reset generated workspace for the next report
-        run: rm -rf pages-worktree public
+        run: sudo rm -rf pages-worktree public
 
       - name: Restore history through the workflow's action reference
         id: next_report
@@ -92,7 +90,7 @@ jobs:
           REPORT_URL: ${{ steps.next_report.outputs.report-url }}
           PUBLIC_DIR: ${{ steps.next_report.outputs.public-dir }}
         run: |
-          git --git-dir=.action-smoke.git cat-file -e action-smoke:public/index.html
+          sudo git --git-dir=.action-smoke.git cat-file -e action-smoke:public/index.html
           python3 - <<'PY'
           import json
           import os

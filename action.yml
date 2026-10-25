@@ -43,8 +43,8 @@ outputs:
 
 runs:
   using: docker
-  # Tested Core commit cc71adea1872fd3509c2099e86e9066d4b1f7093.
-  image: docker://ghcr.io/aleksandr-kotlyar/allure-history-core@sha256:81b91c5b4861da6fc78189a56e4f8884026fc5a77d1d06eaf319792a917d5f8f
+  # Tested Core commit c31561e42a240e108f4a8144d81c87b22bef6bf3.
+  image: docker://ghcr.io/aleksandr-kotlyar/allure-history-core@sha256:7a7ffa23f277b0d857be9a44d4b8358b57b584b50beaf034ca9b8ee35d12b2be
   args:
     - /usr/local/bin/allure-history-github
     - publish-job
