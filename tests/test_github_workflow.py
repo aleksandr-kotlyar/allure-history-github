@@ -32,7 +32,7 @@ def test_reusable_workflow_contains_github_pages_deploy_steps():
     assert 'default: gh-pages' in workflow
     assert 'default: allure-results' in workflow
     assert 'default: jobid' in workflow
-    assert "default: 2026.2.11" in workflow
+    assert "default: 2026.4.1" in workflow
     assert 'PAGES_BASE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}"' in workflow
     assert 'git clone --single-branch --branch "${PAGES_BRANCH}"' in workflow
     assert "output.report_url" in workflow

@@ -49,7 +49,7 @@ jobs:
 
   publish-allure-history:
     needs: test
-    uses: aleksandr-kotlyar/allure-history-github/.github/workflows/allure-history.yml@master
+    uses: aleksandr-kotlyar/allure-history-github/.github/workflows/allure-history.yml@2026.4.1
     with:
       environment: dev
       pages-branch: gh-pages
@@ -65,10 +65,8 @@ The reusable workflow downloads the uploaded artifacts, restores the previous br
 Report generation is delegated to
 [`allure-history-core`](https://gitlab.com/aleksandr-kotlyar/allure-history-core).
 The workflow checks out the public GitLab core release selected by `core-ref`
-(default `2026.2.11`). It does not require access to the GitHub core mirror.
-Pin a release tag or commit in production workflows. The workflow example uses
-`master` until an adapter release is published; use a validated commit SHA for
-an immutable pin.
+(default `2026.4.1`). It does not require access to the GitHub core mirror.
+Pin a release tag or commit in production workflows.
 
 ## Inputs
 
@@ -82,7 +80,7 @@ an immutable pin.
 | `pages-base-url` | inferred | Optional explicit Pages base URL. |
 | `comment-pr` | `false` | Post or update a pull request comment with the immutable report URL. |
 | `pull-request-number` | empty | Pull request number used for comments. |
-| `core-ref` | `2026.2.11` | Allure History Core release tag or commit from GitLab. |
+| `core-ref` | `2026.4.1` | Allure History Core release tag or commit from GitLab. |
 
 ## Report Storage Layout
 

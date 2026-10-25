@@ -47,7 +47,7 @@ on:
         description: Allure History Core release tag or commit from GitLab.
         required: false
         type: string
-        default: 2026.2.11
+        default: 2026.4.1
 
 permissions:
   contents: write
