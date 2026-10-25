@@ -1,4 +1,4 @@
-name: Reusable Allure History Publisher
+name: Allure History GitHub
 
 on:
   workflow_call:
@@ -44,10 +44,10 @@ on:
         type: string
         default: ""
       core-ref:
-        description: Core Allure History release tag or commit.
+        description: Allure History Core release tag or commit from GitLab.
         required: false
         type: string
-        default: main
+        default: 2026.4.1
 
 permissions:
   contents: write
@@ -56,7 +56,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: github-allure-history-pages
+  group: allure-history-github-pages
   cancel-in-progress: false
 
 jobs:
@@ -72,12 +72,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Checkout Core Allure History
-        uses: actions/checkout@v7
-        with:
-          repository: aleksandr-kotlyar/core-allure-history
-          ref: ${{ inputs.core-ref }}
-          path: .allure-history-core
+      - name: Checkout Allure History Core
+        env:
+          CORE_REF: ${{ inputs.core-ref }}
+        run: |
+          git clone https://gitlab.com/aleksandr-kotlyar/allure-history-core.git .allure-history-core
+          git -C .allure-history-core checkout --detach "$CORE_REF"
 
       - name: Setup Python
         uses: actions/setup-python@v7
@@ -156,7 +156,7 @@ jobs:
           if [ -n "${PAGES_BASE_URL_INPUT:-}" ]; then
             PAGES_BASE_URL="${PAGES_BASE_URL_INPUT%/}"
           else
-            PAGES_BASE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_EVENT_REPOSITORY_NAME}"
+            PAGES_BASE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}"
           fi
 
           export JOB_ID REPORT_DIR REPORT_ENV REPORT_BRANCH PAGES_BASE_URL
@@ -194,11 +194,11 @@ jobs:
             --build-name "GitHub Actions Run ${JOB_ID}" \
             --modified-at "${MODIFIED_AT}" \
             --reports-to-keep "${REPORTS_TO_KEEP}" \
-            --public-title github-allure-history \
-            --publisher-title "GitHub Allure History Publisher" \
+            --public-title allure-history-github \
+            --publisher-title "Allure History GitHub" \
             --pages-name "GitHub Pages" \
-            --generator-name github-allure-history \
-            --generator-url "https://github.com/aleksandr-kotlyar/github-allure-history" \
+            --generator-name allure-history-github \
+            --generator-url "https://github.com/aleksandr-kotlyar/allure-history-github" \
             --generator-version "${GITHUB_REF_NAME:-unknown}" \
             --output-file allure-history-output.json
 
@@ -266,6 +266,7 @@ jobs:
             const fs = require("fs");
             const output = JSON.parse(fs.readFileSync("allure-history-output.json", "utf8"));
             const reportUrl = output.report_url;
+            // Keep the marker so existing PR comments are updated after the rename.
             const marker = "<!-- github-allure-history-report -->";
             const body = `${marker}\nAllure report: ${reportUrl}`;
             const issue_number = Number("${{ inputs.pull-request-number }}");
