@@ -6,7 +6,8 @@ own job, or as a reusable workflow that handles the complete Pages deployment.
 
 Report generation, history, retention, and indexes come from
 [Allure History Core](https://github.com/aleksandr-kotlyar/allure-history-core).
-The action runs a tested public GHCR image pinned by digest in `action.yml`.
+The action runs a public GHCR image built from a Core release tag. `action.yml`
+includes the release version and pins its tested image by digest.
 Consumers do not need registry credentials or a container build.
 
 ## Fork the example
