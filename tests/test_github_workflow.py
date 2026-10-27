@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -7,7 +8,11 @@ def test_action_runs_pinned_public_core_image():
     action = (PROJECT_ROOT / "action.yml").read_text(encoding="utf-8")
 
     assert "using: docker" in action
-    assert "docker://ghcr.io/aleksandr-kotlyar/allure-history-core@sha256:" in action
+    assert re.search(
+        r"docker://ghcr\.io/aleksandr-kotlyar/allure-history-core"
+        r"(?::\d{4}\.\d+\.\d+)?@sha256:[0-9a-f]{64}",
+        action,
+    )
     assert "/usr/local/bin/allure-history-github" in action
     assert "- publish-job" in action
     assert "GITHUB_TOKEN: ${{ inputs.github-token }}" in action

@@ -7,6 +7,8 @@ own job, or as a reusable workflow that handles the complete Pages deployment.
 Report generation, history, retention, and indexes come from
 [Allure History Core](https://github.com/aleksandr-kotlyar/allure-history-core).
 The action runs a tested public GHCR image pinned by digest in `action.yml`.
+This feature branch uses a Core feature runtime because release `2026.4.1`
+does not yet support custom report groups or S3 publishing.
 Consumers do not need registry credentials or a container build.
 
 ## Fork the example
