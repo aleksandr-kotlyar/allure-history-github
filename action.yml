@@ -47,8 +47,8 @@ outputs:
 runs:
   using: docker
   # Custom report groups require the Core feature runtime until its next release.
-  # Tested Core commit 9c593a58c346ec7602439c21f17c51799213a872.
-  image: docker://ghcr.io/aleksandr-kotlyar/allure-history-core@sha256:7cf49290044a531ad4079daa5dd90b71dfc8e318dd43cfd812760087248fff43
+  # Tested Core commit 8637b26aa5972dcd216cc737205c28815e4d3d30.
+  image: docker://ghcr.io/aleksandr-kotlyar/allure-history-core@sha256:9d1b29412f09f3fca24b31cc7e1caaa755c48e431b794f1ac2d9b15c23f30a04
   args:
     - /usr/local/bin/allure-history-github
     - publish-job

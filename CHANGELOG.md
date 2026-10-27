@@ -21,6 +21,8 @@
 
 ### Fixed
 
+- PR report links open the overview when there are no failed or broken tests,
+  and the categories page when either count is positive.
 - Re-running publication uses a Pages artifact named for the current attempt,
   avoiding deployment failures caused by multiple artifacts with the same name.
 

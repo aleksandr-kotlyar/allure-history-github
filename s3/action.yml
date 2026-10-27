@@ -5,7 +5,7 @@ author: Aleksandr Kotlyar
 inputs:
   core-image:
     description: Tested Core runtime containing the S3 publish-job command.
-    default: ghcr.io/aleksandr-kotlyar/allure-history-core@sha256:3e24a9d4e3cd208f1513190dec5273433ef61938177efb4f8a8cb80f9bfe651f
+    default: ghcr.io/aleksandr-kotlyar/allure-history-core@sha256:9d1b29412f09f3fca24b31cc7e1caaa755c48e431b794f1ac2d9b15c23f30a04
   s3-uri:
     description: Dedicated S3 prefix owned by this report tree.
     required: true
