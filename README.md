@@ -1,4 +1,4 @@
-# Allure History GitHub
+# Allure History for GitHub Pages
 
 Publish static Allure reports with persistent branch history to GitHub Pages.
 Use this repository as a working example to fork, as a GitHub Action inside your
