@@ -8,13 +8,18 @@ on:
         required: false
         type: string
         default: dev
+      group-path:
+        description: Relative report group; empty uses environment/branch.
+        required: false
+        type: string
+        default: ""
       pages-branch:
         description: Branch used to store generated Pages content and Allure history.
         required: false
         type: string
         default: gh-pages
       reports-to-keep:
-        description: Number of immutable report snapshots kept per environment and branch.
+        description: Number of immutable report snapshots kept per report group.
         required: false
         type: number
         default: 30
@@ -79,6 +84,7 @@ jobs:
         uses: $/
         with:
           environment: ${{ inputs.environment }}
+          group-path: ${{ inputs.group-path }}
           pages-branch: ${{ inputs.pages-branch }}
           reports-to-keep: ${{ inputs.reports-to-keep }}
           pages-base-url: ${{ inputs.pages-base-url }}

@@ -1,0 +1,46 @@
+name: Allure History S3 Navigation
+description: Preview or publish navigation for existing Allure reports in S3-compatible storage.
+author: Aleksandr Kotlyar
+
+inputs:
+  core-image:
+    description: Immutable Core image containing allure-history-s3; the current Pages image does not include it.
+    required: true
+  s3-uri:
+    description: S3 bucket or prefix containing existing Allure reports.
+    required: true
+  public-url:
+    description: HTTP(S) report URL corresponding to the selected S3 prefix.
+    required: true
+  public-title:
+    description: Root label in navigation breadcrumbs.
+    default: allure-history
+  publish:
+    description: Publish the prepared navigation; false creates only preview and rollback files.
+    default: 'false'
+  show-intro:
+    description: Show the project-summary banner above the navigation.
+    default: 'false'
+
+outputs:
+  public-dir:
+    description: Local navigation preview directory.
+    value: ${{ steps.navigation.outputs.public-dir }}
+  plan-path:
+    description: Plan file; retain its entire parent directory for rollback.
+    value: ${{ steps.navigation.outputs.plan-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Prepare and optionally publish S3 navigation
+      id: navigation
+      shell: bash
+      env:
+        ALLURE_HISTORY_CORE_IMAGE: ${{ inputs.core-image }}
+        ALLURE_HISTORY_S3_URI: ${{ inputs.s3-uri }}
+        ALLURE_HISTORY_S3_PUBLIC_URL: ${{ inputs.public-url }}
+        ALLURE_HISTORY_PUBLIC_TITLE: ${{ inputs.public-title }}
+        ALLURE_HISTORY_S3_PUBLISH: ${{ inputs.publish }}
+        ALLURE_HISTORY_SHOW_INTRO: ${{ inputs.show-intro }}
+      run: bash "$GITHUB_ACTION_PATH/run.sh"

@@ -109,12 +109,17 @@ ensure that the workflow uses the action from the selected workflow version.
 
 ## Inputs and outputs
 
+For existing reports in object storage, use the separate
+[`s3-index` action](s3-index/action.yml) described below. Its inputs and runtime
+are independent of the Pages action.
+
 | Action input | Default | Purpose |
 | --- | --- | --- |
 | `results-dir` | `allure-results` | Results directory in the caller workspace. |
 | `environment` | `dev` | Report environment folder. |
+| `group-path` | empty | Custom relative report group; otherwise `environment/branch-slug`. |
 | `pages-branch` | `gh-pages` | Persistent report/history storage branch. |
-| `reports-to-keep` | `30` | Snapshots retained per environment and branch. |
+| `reports-to-keep` | `30` | Snapshots retained per group. |
 | `job-id` | artifact or run ID | Optional snapshot ID; otherwise uses `.artifacts/jobid/jobid` or `GITHUB_RUN_ID`. |
 | `pages-base-url` | inferred | Explicit base URL for a custom Pages domain. |
 | `github-token` | `github.token` | Token with `contents: write` for storage pushes. |
@@ -148,6 +153,30 @@ Each run restores the branch's history, creates a new snapshot, refreshes the
 `latest/` redirect, and applies retention. The persistent `gh-pages` branch is
 created on the first run. Push access to that branch is required.
 
+## Custom report groups
+
+The action and reusable workflow accept `group-path`. Build it with GitHub
+expressions; for example, in a browser matrix:
+
+```yaml
+with:
+  group-path: ${{ github.event.repository.name }}/${{ matrix.browser }}/${{ github.ref_name }}
+```
+
+Core automatically creates this tree and places each `job_<id>/` inside its
+group, alongside `history/` and `latest/`. Each exact path has independent history
+and retention. Include the branch and project when they need separate histories.
+Snapshot IDs must be unique in a group; publishing the same ID replaces that
+snapshot. `$VARIABLE` strings are not expanded by the action; use expressions.
+
+Omitting the input keeps `environment/branch-slug`. Changing it starts a new
+group without moving existing reports. The path must be relative, with no
+empty, `.` or `..` segments, backslashes, or reserved report/service names.
+Spaces and Unicode are preserved and URL-encoded. See the
+[Core group contract](https://github.com/aleksandr-kotlyar/allure-history-core#custom-report-groups)
+for reserved names. Select an action revision containing this input and its
+updated Core pin; older release tags retain their existing layout.
+
 ## Development
 
 ```bash
@@ -163,6 +192,118 @@ GitHub. Successful runs on the allowed publishing branch also deploy the demo.
 
 Core owns the runtime image and its registry publication. Releases of this
 repository pin a tested Core digest; forks can use that image unchanged.
+
+## Generate and publish reports to S3
+
+Use the separate `s3` action after your tests produce `allure-results`:
+
+```yaml
+- uses: aleksandr-kotlyar/allure-history-github/s3@RELEASE_TAG
+  id: report
+  with:
+    s3-uri: s3://reports/team/project
+    public-url: https://reports.example.test/team/project
+    group-path: ${{ github.event.repository.name }}/${{ matrix.browser }}/${{ github.ref_name }}
+    reports-to-keep: 30
+```
+
+Select an action revision containing `allure-history-s3 publish-job`; it pins a
+compatible tested Core image. Configure AWS credentials before the action, through workload
+identity, standard `AWS_*` variables, or shared configuration. S3-compatible
+endpoints use `AWS_ENDPOINT_URL_S3` and the normal addressing-style configuration.
+The Docker action forwards this configuration and the GitHub context by name.
+
+Core restores the S3 tree, reuses group history, generates the new report, updates
+navigation and `latest/`, then prunes old snapshots. No report-storage branch,
+Git push permission, or GitHub Pages deployment is used. Outputs are `report-url`
+and `public-dir` (the local restored tree). An empty `group-path` uses
+`environment/branch`; group history and retention remain independent.
+
+The optional `core-image` input overrides the tested runtime pin. Other inputs
+are `results-dir` (`allure-results`), `environment` (`dev`),
+`job-id` (artifact or run ID), `public-title` (`allure-history`), `show-intro`
+(`false`), `comment-pr` (`false`), and `pull-request-number`. `github-token`
+defaults to `github.token` and is used only for optional PR comments; those need
+`pull-requests: write`. Basic publication requires no repository write permission.
+
+Use a dedicated, non-root S3 prefix owned by this tree. All publishers must share
+that prefix and lock, without independently publishing overlapping prefixes.
+The whole prefix is downloaded before generation; large archives need time and
+disk space. S3 writes are per object. See the
+[Core publication contract](https://gitlab.com/aleksandr-kotlyar/allure-history-core/-/blob/s3-navigation-actions/README.md#publishing-reports-to-s3)
+for failure and concurrency limits. The separate `s3-index` action below remains
+available for navigation over reports generated elsewhere.
+
+## Navigation for reports already in S3
+
+The `s3-index` action uses Core to discover existing reports, prepare a local
+navigation preview and optionally publish only the planned navigation objects.
+It runs on Linux with Docker, including `ubuntu-24.04`. Supply an immutable Core
+image containing `allure-history-s3` as `core-image`; Core release `2026.4.1`
+does not contain the new command. There is no fallback to that older image.
+
+Configure AWS credentials before this step, using workload identity, standard
+`AWS_*` environment variables or shared AWS configuration files. The action
+forwards that configuration to Core without accepting separate credential inputs.
+For AWS, an earlier `aws-actions/configure-aws-credentials@v6` step can exchange
+GitHub OIDC for temporary credentials; that requires `id-token: write` on the
+caller job. A compatible storage provider can use its existing CI credentials.
+
+```yaml
+permissions:
+  contents: read
+
+jobs:
+  navigation:
+    runs-on: ubuntu-24.04
+    steps:
+      # Configure AWS credentials here, or use a runner with an existing identity.
+      - uses: aleksandr-kotlyar/allure-history-github/s3-index@RELEASE_TAG
+        with:
+          core-image: ${{ vars.ALLURE_HISTORY_CORE_IMAGE }}
+          s3-uri: s3://reports/team/project
+          public-url: https://reports.example.test/team/project
+          public-title: Project reports
+          publish: 'false'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ENDPOINT_URL_S3: ${{ vars.AWS_ENDPOINT_URL_S3 }}
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: allure-navigation
+          path: allure-navigation/
+          include-hidden-files: true
+```
+
+For OIDC, omit the credential `env` entries above so the earlier credential
+step's temporary values are inherited. `core-image`, `s3-uri`, and `public-url`
+are required. `public-title` defaults to `allure-history`; `publish` and
+`show-intro` default to `false`. The `No server / No external storage` banner
+is hidden by default. Outputs are `public-dir` (the local preview) and
+`plan-path`; retain the entire `allure-navigation/` directory for rollback,
+including jobs that partially fail publication.
+
+Paths stay as existing object keys. Groups can have any depth; numeric jobs,
+timestamp reports and arbitrary report names with normal Allure markers are
+supported. Both `history/` and `.history/` are excluded. `public-url` maps to the
+selected prefix independently of the S3 API endpoint, so custom hosts and CDN
+paths work. The standard AWS config supports endpoint and addressing-style
+settings. The action mounts the workspace read/write and default `.aws` and
+explicit configuration, web identity and CA files read-only.
+
+With `publish: 'true'`, Core validates the preview and uses conditional writes
+and a prefix lock. Reports, attachments and histories are preserved. There is
+no report generation, retention, bucket-wide deletion, Git push or Pages
+deployment. Use Core's `allure-history-s3 rollback --plan PATH/plan.json` with
+the downloaded complete artifact to restore prior navigation. The endpoint must
+enforce conditional PUT/DELETE; all publishers must agree on the same prefix.
+See the [Core S3 contract](https://github.com/aleksandr-kotlyar/allure-history-core#existing-reports-in-s3)
+for rollback and concurrency limits.
 
 ## Migration
 

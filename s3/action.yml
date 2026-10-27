@@ -1,0 +1,74 @@
+name: Allure History S3
+description: Restore history, generate Allure reports, retain snapshots and publish the report tree to S3.
+author: Aleksandr Kotlyar
+
+inputs:
+  core-image:
+    description: Tested Core runtime containing the S3 publish-job command.
+    default: ghcr.io/aleksandr-kotlyar/allure-history-core@sha256:3e24a9d4e3cd208f1513190dec5273433ef61938177efb4f8a8cb80f9bfe651f
+  s3-uri:
+    description: Dedicated S3 prefix owned by this report tree.
+    required: true
+  public-url:
+    description: Public HTTP(S) URL corresponding to that S3 prefix.
+    required: true
+  results-dir:
+    default: allure-results
+    description: Directory containing Allure results in the caller workspace.
+  environment:
+    default: dev
+    description: Default report environment folder.
+  group-path:
+    default: ''
+    description: Relative report group; empty uses environment/branch. Use GitHub expressions to build the path.
+  reports-to-keep:
+    default: '30'
+    description: Snapshots retained per group.
+  job-id:
+    default: ''
+    description: Snapshot ID; otherwise uses the jobid artifact or GITHUB_RUN_ID.
+  public-title:
+    default: allure-history
+    description: Navigation root label.
+  github-token:
+    default: ${{ github.token }}
+    description: Token used only for optional PR comments; no Git push permission is required.
+  comment-pr:
+    default: 'false'
+    description: Post or update a PR report comment; requires pull-requests write permission.
+  pull-request-number:
+    default: ''
+    description: PR number when comment-pr is enabled.
+  show-intro:
+    default: 'false'
+    description: Show the project-summary banner above navigation.
+
+outputs:
+  report-url:
+    description: Published URL of this run's report.
+    value: ${{ steps.publish.outputs.report-url }}
+  public-dir:
+    description: Local restored and updated report tree.
+    value: ${{ steps.publish.outputs.public-dir }}
+
+runs:
+  using: composite
+  steps:
+    - name: Generate and publish Allure history to S3
+      id: publish
+      shell: bash
+      env:
+        ALLURE_HISTORY_CORE_IMAGE: ${{ inputs.core-image }}
+        ALLURE_HISTORY_S3_URI: ${{ inputs.s3-uri }}
+        ALLURE_HISTORY_S3_PUBLIC_URL: ${{ inputs.public-url }}
+        ALLURE_HISTORY_RESULTS_DIR: ${{ inputs.results-dir }}
+        ALLURE_HISTORY_GROUP_PATH: ${{ inputs.group-path }}
+        ALLURE_HISTORY_PUBLIC_TITLE: ${{ inputs.public-title }}
+        ALLURE_HISTORY_JOB_ID: ${{ inputs.job-id }}
+        ALLURE_HISTORY_COMMENT_PR: ${{ inputs.comment-pr }}
+        ALLURE_HISTORY_SHOW_INTRO: ${{ inputs.show-intro }}
+        GITHUB_PR_NUMBER: ${{ inputs.pull-request-number }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        ENV: ${{ inputs.environment }}
+        REPORTS_TO_KEEP: ${{ inputs.reports-to-keep }}
+      run: bash "$GITHUB_ACTION_PATH/run.sh"
