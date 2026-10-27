@@ -19,6 +19,11 @@
 - Core is pinned by image digest in `action.yml`; callers no longer select a
   source checkout with `core-ref`.
 
+### Fixed
+
+- Re-running publication uses a Pages artifact named for the current attempt,
+  avoiding deployment failures caused by multiple artifacts with the same name.
+
 ## 2026.4.1 (2026-10-26)
 
 ### Changed

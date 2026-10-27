@@ -34,6 +34,8 @@ def test_reusable_workflow_composes_its_own_action_and_pages():
     assert "uses: actions/configure-pages@v6" in workflow
     assert "uses: actions/upload-pages-artifact@v5" in workflow
     assert "uses: actions/deploy-pages@v5" in workflow
+    assert "name: github-pages-${{ github.run_attempt }}" in workflow
+    assert "artifact_name: github-pages-${{ github.run_attempt }}" in workflow
     assert "path: ${{ steps.report.outputs.public-dir }}" in workflow
     assert "core-ref:" not in workflow
     assert "git clone" not in workflow
