@@ -1,4 +1,4 @@
-name: Allure History GitHub
+name: Allure History for GitHub Pages
 
 on:
   workflow_call:
@@ -81,7 +81,7 @@ jobs:
 
       - name: Build and persist Allure history
         id: report
-        uses: $/
+        uses: $/pages
         with:
           environment: ${{ inputs.environment }}
           group-path: ${{ inputs.group-path }}

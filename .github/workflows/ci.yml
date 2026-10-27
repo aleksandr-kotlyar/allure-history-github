@@ -66,9 +66,9 @@ jobs:
       - name: Prepare isolated report storage
         run: sudo git init --bare .action-smoke.git
 
-      - name: Run this checkout's action
+      - name: Run this checkout's Pages action
         id: report
-        uses: ./
+        uses: ./pages
         with:
           github-token: fixture-token
           pages-branch: action-smoke
@@ -77,9 +77,9 @@ jobs:
       - name: Reset generated workspace for the next report
         run: sudo rm -rf pages-worktree public
 
-      - name: Restore history through the workflow's action reference
+      - name: Restore history through the workflow's Pages action reference
         id: next_report
-        uses: $/
+        uses: $/pages
         with:
           github-token: fixture-token
           pages-branch: action-smoke

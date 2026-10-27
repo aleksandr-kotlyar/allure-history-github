@@ -4,8 +4,11 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_action_runs_pinned_public_core_image():
-    action = (PROJECT_ROOT / "action.yml").read_text(encoding="utf-8")
+def test_pages_action_runs_pinned_public_core_image():
+    action = (PROJECT_ROOT / "pages/action.yml").read_text(encoding="utf-8")
+
+    # Marketplace requires root metadata; keep its contract and runtime identical.
+    assert action == (PROJECT_ROOT / "action.yml").read_text(encoding="utf-8")
 
     assert "using: docker" in action
     assert re.search(
@@ -27,7 +30,7 @@ def test_reusable_workflow_composes_its_own_action_and_pages():
         encoding="utf-8"
     )
 
-    assert "uses: $/" in workflow
+    assert "uses: $/pages\n" in workflow
     assert "      group-path:\n" in workflow
     assert "          group-path: ${{ inputs.group-path }}" in workflow
     assert "uses: actions/download-artifact@v8" in workflow
@@ -49,8 +52,8 @@ def test_project_ci_dogfoods_local_action_and_reusable_workflow():
         encoding="utf-8"
     )
 
-    assert "uses: ./" in workflow
-    assert "uses: $/" in workflow
+    assert "uses: ./pages\n" in workflow
+    assert "uses: $/pages\n" in workflow
     assert "uses: ./.github/workflows/allure-history.yml" in workflow
     assert "needs: [test_gate, action_smoke]" in workflow
     assert "github.event_name != 'pull_request' ||" in workflow

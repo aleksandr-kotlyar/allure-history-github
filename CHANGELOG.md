@@ -4,6 +4,8 @@
 
 ### Added
 
+- Explicit `/pages` action path for GitHub Pages publication, alongside `/s3`
+  and `/s3-index`; examples and the reusable workflow use `/pages`.
 - Docker action backed by a tested, immutable Core image from public GHCR.
 - Action outputs for the immutable report URL and generated Pages directory.
 - An isolated CI integration check that generates a real report and persists

@@ -1,12 +1,24 @@
-# Allure History for GitHub Pages
+# Allure History — GitHub Pages & S3
 
-Publish static Allure reports with persistent branch history to GitHub Pages.
-Use this repository as a working example to fork, as a GitHub Action inside your
-own job, or as a reusable workflow that handles the complete Pages deployment.
+Publish static Allure reports with persistent history to GitHub Pages or S3.
+Choose the action by its path:
+
+| Destination | Action path |
+| --- | --- |
+| GitHub Pages | `aleksandr-kotlyar/allure-history-github/pages@REF` |
+| S3 | `aleksandr-kotlyar/allure-history-github/s3@REF` |
+| Navigation for existing S3 reports | `aleksandr-kotlyar/allure-history-github/s3-index@REF` |
+
+Use a commit or release tag containing the selected action directory for `REF`.
+Release `2026.4.1` predates these paths. S3 inputs are documented in
+[`s3/action.yml`](s3/action.yml) and [`s3-index/action.yml`](s3-index/action.yml).
+
+The examples below use GitHub Pages. Fork this repository as a working example,
+add the Pages action to your own job, or call the complete publishing workflow.
 
 Report generation, history, retention, and indexes come from
 [Allure History Core](https://github.com/aleksandr-kotlyar/allure-history-core).
-The action runs a tested public GHCR image pinned by digest in `action.yml`.
+The Pages action runs a tested public GHCR image pinned by digest in `pages/action.yml`.
 Consumers do not need registry credentials or a container build.
 
 ## Fork the example
@@ -15,8 +27,8 @@ Consumers do not need registry credentials or a container build.
 2. In **Settings → Pages**, choose **GitHub Actions** as the source.
 3. Run **CI** from the Actions tab, or push to `master`/`main`.
 
-The CI tests this checkout's action, then calls the local reusable workflow.
-That workflow references its own action using `$/`, so edits in your fork are
+The CI tests this checkout's Pages action, then calls the local reusable workflow.
+That workflow references its own action using `$/pages`, so edits in your fork are
 used at the same commit. The Core image remains the tested upstream image.
 The workflow creates `gh-pages` in your repository and deploys your report:
 
@@ -38,9 +50,9 @@ to deploy Pages.
 This publisher owns the repository's entire Pages site. Use a dedicated report
 repository if an existing Pages site must be preserved.
 
-## Add the action to an existing job
+## Add the Pages action to an existing job
 
-Replace `RELEASE_TAG` with a release containing `action.yml`. Your test
+Replace `RELEASE_TAG` with a release containing `pages/action.yml`. Your test
 requirements must include `allure-pytest` to produce `allure-results`.
 
 ```yaml
@@ -70,7 +82,7 @@ jobs:
       - run: pip install -r requirements.txt
       - run: pytest --alluredir=allure-results
 
-      - uses: aleksandr-kotlyar/allure-history-github@RELEASE_TAG
+      - uses: aleksandr-kotlyar/allure-history-github/pages@RELEASE_TAG
         id: report
         with:
           results-dir: allure-results
@@ -111,7 +123,7 @@ jobs:
 ```
 
 Enable Pages with the `GitHub Actions` source and allow the publishing branch in
-the `github-pages` environment. GitHub.com self repository references (`$/`)
+the `github-pages` environment. GitHub.com self repository references (`$/pages`)
 ensure that the workflow uses the action from the selected workflow version.
 
 ## Inputs and outputs
@@ -187,11 +199,14 @@ python3 -m pip install -r requirements.txt
 pytest -m "not demo"
 ```
 
-CI runs the local Docker action against an isolated bare Git repository, then
-runs the workflow's `$/` reference to verify a second report restores history.
+CI runs `./pages` against an isolated bare Git repository, then runs the workflow's
+`$/pages` reference to verify a second report restores history.
 It checks both immutable snapshots, Allure trends, persistent storage, and
 returned outputs. These checks do not deploy Pages or push report storage to
 GitHub. Successful runs on the allowed publishing branch also deploy the demo.
+
+The root `action.yml` mirrors `pages/action.yml` for the GitHub Marketplace
+listing. Tests check that both files stay identical.
 
 Core owns the runtime image and its registry publication. Releases of this
 repository pin a tested Core digest; forks can use that image unchanged.

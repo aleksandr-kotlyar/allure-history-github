@@ -1,0 +1,65 @@
+name: Allure History for GitHub Pages
+description: Build Allure reports, retain branch history, and prepare GitHub Pages content.
+author: Aleksandr Kotlyar
+
+branding:
+  icon: bar-chart-2
+  color: green
+
+inputs:
+  github-token:
+    description: Token with contents write permission for the report storage branch.
+    default: ${{ github.token }}
+  results-dir:
+    description: Directory containing Allure results in the caller workspace.
+    default: allure-results
+  environment:
+    description: Report environment folder under public/.
+    default: dev
+  group-path:
+    description: Relative report group; empty uses environment/branch. Pass a path built with GitHub expressions.
+    default: ''
+  pages-branch:
+    description: Branch storing generated Pages content and history.
+    default: gh-pages
+  reports-to-keep:
+    description: Report snapshots retained per report group.
+    default: '30'
+  job-id:
+    description: Snapshot ID; defaults to the downloaded jobid artifact or GITHUB_RUN_ID.
+    default: ''
+  pages-base-url:
+    description: Explicit Pages base URL; inferred from the caller repository when empty.
+    default: ''
+  comment-pr:
+    description: Post or update a pull request report comment; requires pull-requests write permission.
+    default: 'false'
+  pull-request-number:
+    description: Pull request number when comment-pr is enabled.
+    default: ''
+
+outputs:
+  report-url:
+    description: Immutable URL of this run's Allure report.
+  public-dir:
+    description: Generated Pages directory in the caller workspace.
+
+runs:
+  using: docker
+  # Custom report groups require the Core feature runtime until its next release.
+  # Tested Core commit 8637b26aa5972dcd216cc737205c28815e4d3d30.
+  image: docker://ghcr.io/aleksandr-kotlyar/allure-history-core@sha256:9d1b29412f09f3fca24b31cc7e1caaa755c48e431b794f1ac2d9b15c23f30a04
+  args:
+    - /usr/local/bin/allure-history-github
+    - publish-job
+  env:
+    GITHUB_TOKEN: ${{ inputs.github-token }}
+    ALLURE_HISTORY_RESULTS_DIR: ${{ inputs.results-dir }}
+    ALLURE_HISTORY_JOB_ID: ${{ inputs.job-id }}
+    ENV: ${{ inputs.environment }}
+    ALLURE_HISTORY_GROUP_PATH: ${{ inputs.group-path }}
+    PAGES_BRANCH: ${{ inputs.pages-branch }}
+    REPORTS_TO_KEEP: ${{ inputs.reports-to-keep }}
+    PAGES_BASE_URL_INPUT: ${{ inputs.pages-base-url }}
+    ALLURE_HISTORY_COMMENT_PR: ${{ inputs.comment-pr }}
+    GITHUB_PR_NUMBER: ${{ inputs.pull-request-number }}
