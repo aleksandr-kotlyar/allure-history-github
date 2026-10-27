@@ -51,6 +51,9 @@ def test_project_ci_dogfoods_local_action_and_reusable_workflow():
     assert "uses: $/" in workflow
     assert "uses: ./.github/workflows/allure-history.yml" in workflow
     assert "needs: [test_gate, action_smoke]" in workflow
-    assert "if: github.event_name != 'pull_request'" in workflow
+    assert "github.event_name != 'pull_request' ||" in workflow
+    assert "github.event.pull_request.head.repo.full_name == github.repository" in workflow
+    assert "comment-pr: ${{ github.event_name == 'pull_request' }}" in workflow
+    assert "pull-request-number: ${{ github.event.pull_request.number || '' }}" in workflow
     assert "name: allure-results" in workflow
     assert "name: jobid" in workflow

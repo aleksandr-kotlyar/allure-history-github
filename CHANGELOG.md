@@ -11,6 +11,9 @@
 
 ### Changed
 
+- CI now publishes reports and enables the existing PR comment update flow
+  for pull requests from branches in the same repository after checks pass.
+  Fork pull requests continue to run tests without publication.
 - The reusable workflow delegates report publishing to this repository's action
   and keeps artifact downloads and GitHub Pages deployment as workflow steps.
 - Core is pinned by image digest in `action.yml`; callers no longer select a

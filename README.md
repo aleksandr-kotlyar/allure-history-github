@@ -27,8 +27,15 @@ https://<owner>.github.io/<repository>/dev/<branch-slug>/latest/
 ```
 
 Repository names and report URLs are derived from the caller's GitHub context.
-Pull requests run tests and isolated action checks; the example deploys Pages
-only on pushes to `master`/`main` and manual runs permitted by the environment.
+Pull requests run tests and isolated action checks. After those checks pass,
+PRs from branches in this repository also publish their report and create or
+update one Allure comment on the PR. PRs from forks only run the checks because
+their token cannot publish reports or write comments.
+
+In **Settings → Environments → github-pages**, allow `refs/pull/*/merge` as a
+deployment branch rule alongside `master`/`main` to enable PR publication.
+Pushes to `master`/`main` and manual runs permitted by the environment continue
+to deploy Pages.
 
 This publisher owns the repository's entire Pages site. Use a dedicated report
 repository if an existing Pages site must be preserved.

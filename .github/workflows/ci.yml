@@ -106,7 +106,9 @@ jobs:
           PY
 
   publish_allure_history:
-    if: github.event_name != 'pull_request'
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     needs: [test_gate, action_smoke]
     uses: ./.github/workflows/allure-history.yml
     with:
